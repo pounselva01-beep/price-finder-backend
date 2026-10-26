@@ -6,7 +6,7 @@ const PORT = process.env.PORT || 3000;
 
 app.get("/", (req, res) => {
   res.json({
-    message: "Price Finder backend is running!",
+    message: "Price Finder Backend is Running!",
     status: "ok"
   });
 });
@@ -21,12 +21,14 @@ app.get("/api/search", (req, res) => {
   }
 
   res.json({
-    message: "Backend is working, but real Indian store prices are not connected yet.",
-    query,
-    products: []
+    message: "Backend is working!",
+    query: query,
+    products: [],
+    note: "Real Indian shopping prices are not connected yet."
   });
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log("Price Finder backend running on port " + PORT);
 });
+
