@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Price Finder</title>
+<style>
+* { box-sizing: border-box; }
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f0f4f8;
+  margin: 0;
+  padding: 16px;
+  color: #222;
+}
+
+header {
+  background: #123b66;
+  color: white;
+  text-align: center;
+  padding: 22px 12px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+section {
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px #00000012;
+}
+
+h2 { color: #123b66; font-size: 21px; }
+
+input, button {
+  width: 100%;
+  padding: 12px;
+  margin: 6px 0;
+  border-radius: 7px;
+  font-size: 16px;
+}
+
+input { border: 1px solid #bbb; }
+
+button {
+  background: #1266cc;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover { background: #084b99; }
+
+.products {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-top: 15px;
+}
+
+.product {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 12px;
+  background: white;
+  overflow-wrap: anywhere;
+}
+
+.product img {
+  width: 100%;
+  height: 150px;
+  object-fit: contain;
+}
+
+.product h3 { color: #123b66; font-size: 17px; }
+
+.price {
+  color: #087b36;
+  font-size: 19px;
+  font-weight: bold;
+}
+
+.original-price { color: #666; }
+.discount { color: #d12c2c; font-weight: bold; }
+.small-text { color: #666; font-size: 13px; }
+.status { margin-top: 10px; overflow-wrap: anywhere; }
+
+footer {
+  text-align: center;
+  color: #666;
+  padding: 15px;
+  font-size: 13px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🔎 Price Finder</h1>
+  <p>Search products and compare prices</p>
+</header>
+
+<section>
+  <h2>📱 Search Sample Products</h2>
+  <input id="localSearch" placeholder="Enter product name...">
+  <button id="localSearchBtn" type="button">Search Products</button>
+  <div id="localResults" class="products"></div>
+</section>
+
+<section>
+  <h2>🌐 Online Product Search</h2>
+  <input id="onlineSearch" placeholder="Try phone, laptop, watch...">
+  <button id="onlineSearchBtn" type="button">Search Online Prices</button>
+  <p class="small-text">
+    Sample conversion: 1 USD = ₹85. This is not a live exchange rate.
+  </p>
+  <div id="onlineStatus" class="status" aria-live="polite"></div>
+  <div id="onlineResults" class="products"></div>
+</section>
+
+<section>
+  <h2>➕ Add Your Own Product</h2>
+  <input id="newName" placeholder="Product name">
+  <input id="newPrice" type="number" min="0" step="0.01" placeholder="Price in ₹">
+  <input id="newStore" placeholder="Shop name">
+  <button id="addProductBtn" type="button">Add Product</button>
+  <div id="addStatus" class="status" aria-live="polite"></div>
+</section>
+
+<section>
+  <h2>⚖️ Compare Prices</h2>
+  <div id="compareResults">Click Compare on a product.</div>
+</section>
+
+<footer>Price Finder — Learning Project</footer>
+
+<script>
+"use strict";
+
+const USD_TO_INR = 85;
+const sampleProducts = [
+  { name: "Apple iPhone", price: 79999, store: "Sample Store" },
+  { name: "Samsung Galaxy Phone", price: 45999, store: "Sample Store" },
+  { name: "Laptop", price: 55999, store: "Sample Store" },
+  { name: "Smart Watch", price: 2999, store: "Sample Store" }
+];
+
+let products = [...sampleProducts];
+
+const $ = id => document.getElementById(id);
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, ch => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;",
+    '"': "&quot;", "'": "&#39;"
+  })[ch]);
+}
+
+function formatPrice(value) {
+  return "₹" + Number(value).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function showLocalProducts(list) {
+  const results = $("localResults");
+
+  if (!list.length) {
+    results.textContent = "No products found.";
+    return;
+  }
+
+  results.innerHTML = list.map(product => {
+    const index = products.indexOf(product);
+
+    return `
+      <div class="product">
+        <h3>${escapeHTML(product.name)}</h3>
+        <p class="price">${formatPrice(product.price)}</p>
+        <p>Store: ${escapeHTML(product.store)}</p>
+        <button type="button" data-compare="${index}">Compare</button>
+      </div>
+    `;
+  }).join("");
+}
+
+$("localSearchBtn").addEventListener("click", function() {
+  const query = $("localSearch").value.trim().toLowerCase();
+
+  showLocalProducts(products.filter(product =>
+    product.name.toLowerCase().includes(query)
+  ));
+});
+
+$("localSearch").addEventListener("keydown", event => {
+  if (event.key === "Enter") $("localSearchBtn").click();
+});
+
+$("localResults").addEventListener("click", event => {
+  const button = event.target.closest("[data-compare]");
+  if (!button) return;
+
+  const product = products[Number(button.dataset.compare)];
+  if (!product) return;
+
+  $("compareResults").innerHTML = `
+    <div class="product">
+      <h3>${escapeHTML(product.name)}</h3>
+      <p>Shop: ${escapeHTML(product.store)}</p>
+      <p class="price">${formatPrice(product.price)}</p>
+    </div>
+  `;
+});
+
+$("addProductBtn").addEventListener("click", function() {
+  const name = $("newName").value.trim();
+  const priceText = $("newPrice").value;
+  const price = Number(priceText);
+  const store = $("newStore").value.trim();
+
+  if (!name || !store || priceText === "" ||
+      !Number.isFinite(price) || price < 0) {
+    $("addStatus").textContent =
+      "Enter product name, a valid price, and shop name.";
+    return;
+  }
+
+  products.push({ name, price, store });
+  $("addStatus").textContent = "Product added successfully!";
+
+  $("newName").value = "";
+  $("newPrice").value = "";
+  $("newStore").value = "";
+
+  showLocalProducts(products);
+});
+
+async function searchOnlinePrices() {
+  const query = $("onlineSearch").value.trim();
+  const status = $("onlineStatus");
+  const results = $("onlineResults");
+
+  if (!query) {
+    status.textContent = "Please enter a product name.";
+    results.innerHTML = "";
+    return;
+  }
+
+  status.textContent = "Searching...";
+  results.innerHTML = "";
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const response = await fetch(
+      "https://dummyjson.com/products/search?q=" +
+      encodeURIComponent(query),
+      { signal: controller.signal }
+    );
+
+    if (!response.ok) throw new Error("API request failed");
+
+    const data = await response.json();
+
+    if (!data.products || !data.products.length) {
+      status.textContent = "No products found. Try phone or laptop.";
+      return;
+    }
+
+    results.innerHTML = data.products.map(product => {
+      const originalPrice = (Number(product.price) || 0) * USD_TO_INR;
+      const discount = Math.min(100, Math.max(
+        0, Number(product.discountPercentage) || 0
+      ));
+      const offerPrice = originalPrice * (1 - discount / 100);
+      const savings = originalPrice - offerPrice;
+
+      return `
+        <div class="product">
+          <img src="${escapeHTML(product.thumbnail || "")}"
+               alt="${escapeHTML(product.title)}"
+               onerror="this.style.display='none'">
+          <h3>${escapeHTML(product.title)}</h3>
+          <p class="original-price">
+            Original Price: <del>${formatPrice(originalPrice)}</del>
+          </p>
+          <p class="discount">Discount: ${discount.toFixed(1)}%</p>
+          <p class="price">Offer Price: ${formatPrice(offerPrice)}</p>
+          <p>You save: ${formatPrice(savings)}</p>
+          <p>${escapeHTML(product.category || "Product")}</p>
+          <p class="small-text">
+            Demo data converted using ₹85 per USD.
+            Not a live store price or current exchange rate.
+          </p>
+        </div>
+      `;
+    }).join("");
+
+    status.textContent = "Products found: " + data.products.length;
+
+  } catch (error) {
+    status.textContent = error.name === "AbortError"
+      ? "Request timed out. Check your internet."
+      : "Online search failed. Check your internet and try again.";
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+$("onlineSearchBtn").addEventListener("click", searchOnlinePrices);
+
+$("onlineSearch").addEventListener("keydown", event => {
+  if (event.key === "Enter") $("onlineSearchBtn").click();
+});
+
+showLocalProducts(products);
+</script>
+</body>
+</html>
